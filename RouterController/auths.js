@@ -4,14 +4,15 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/auth.js");
 
 const router = express.Router();
+
 //Register user
 
 router.post('/register', async (req, res) => {
     try {
-        const {  username,email, password } = req.body;        
+        const { username, email, password } = req.body;
         const hashedPassword = bcrypt.hashSync(password, 10);
 
-        const user = new User({ username,email, password: hashedPassword });
+        const user = new User({ username, email, password: hashedPassword });
         await user.save();
 
         res.status(200).json({ message: 'User has been registered successfully', user_id: user._id });
@@ -36,9 +37,12 @@ router.post('/login', async (req, res) => {
         }
 
         const token = jwt.sign({ userId: user._id }, process.env.JWT);
-        res.status(200).json({ 
-            message: `Login successful welcome  ${username}!`, 
-            user_id: user._id, token });
+        res
+            .cookie("access_token", token, {
+                httpOnly: true,
+            })
+            .status(200)
+            .json(user);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -49,8 +53,8 @@ router.post('/forgotPassword', async (req, res) => {
     try {
         const { email } = req.body;
         const user = await User.findOne({ email })
-        if(!user){
-            return res.status(401).json({error:"Email not registered"})
+        if (!user) {
+            return res.status(401).json({ error: "Email not registered" })
         }
         res.status(200).json({ message: `Password reset link is sent to Registered email :${email}` });
     } catch (error) {
